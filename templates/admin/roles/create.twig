@@ -1,0 +1,203 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}Create Role{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Create Role</h1>
+            </div>
+            <div class="col-sm-6">
+                <div class="float-sm-right">
+                    <a href="{{ adminFullPath }}/roles" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content" id="createRoleApp">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Role Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <form @submit.prevent="saveRole">
+                            <div class="form-group">
+                                <label for="name">Name <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="name"
+                                    v-model="form.name"
+                                    @input="generateSlug"
+                                    :class="{'is-invalid': errors.name}"
+                                    required
+                                >
+                                <div class="invalid-feedback" v-if="errors.name">
+                                    ${errors.name[0]}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="slug">Slug <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="slug"
+                                    v-model="form.slug"
+                                    :class="{'is-invalid': errors.slug}"
+                                    required
+                                >
+                                <small class="form-text text-muted">
+                                    Unique identifier (lowercase, no spaces)
+                                </small>
+                                <div class="invalid-feedback" v-if="errors.slug">
+                                    ${errors.slug[0]}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="description"
+                                    v-model="form.description"
+                                    rows="3"
+                                ></textarea>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Permissions</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <input 
+                                type="text" 
+                                class="form-control mb-3" 
+                                placeholder="Search permissions..."
+                                v-model="permissionSearch"
+                            >
+                        </div>
+                        
+                        <div style="max-height: 400px; overflow-y: auto;">
+                            <div class="custom-control custom-checkbox" v-for="permission in filteredPermissions" :key="permission.id">
+                                <input 
+                                    type="checkbox" 
+                                    class="custom-control-input" 
+                                    :id="'perm-' + permission.id"
+                                    :value="permission.id"
+                                    v-model="form.permissions"
+                                >
+                                <label class="custom-control-label" :for="'perm-' + permission.id">
+                                    <strong>${permission.slug}</strong>
+                                    <br>
+                                    <small class="text-muted">${permission.description || 'No description'}</small>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                Selected: ${form.permissions.length} permissions
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <button @click="saveRole" class="btn btn-success btn-block" :disabled="saving">
+                            <i class="fas fa-save"></i> 
+                            ${saving ? 'Saving...' : 'Create Role'}
+                        </button>
+                        <a href="{{ adminFullPath }}/roles" class="btn btn-secondary btn-block">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const { createApp } = Vue;
+
+createApp({
+    delimiters: ['${', '}'],
+    data() {
+        return {
+            form: {
+                name: '',
+                slug: '',
+                description: '',
+                permissions: []
+            },
+            permissions: {{ permissions|json_encode|raw }},
+            permissionSearch: '',
+            errors: {},
+            saving: false
+        }
+    },
+    computed: {
+        filteredPermissions() {
+            if (!this.permissionSearch) {
+                return this.permissions;
+            }
+            const search = this.permissionSearch.toLowerCase();
+            return this.permissions.filter(p => 
+                p.slug.toLowerCase().includes(search) ||
+                (p.description && p.description.toLowerCase().includes(search))
+            );
+        }
+    },
+    methods: {
+        generateSlug() {
+            this.form.slug = this.form.name
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_|_$/g, '');
+        },
+        
+        async saveRole() {
+            this.saving = true;
+            this.errors = {};
+            
+            try {
+                const response = await axios.post('{{ adminFullPath }}/roles', this.form);
+                
+                if (response.data.success) {
+                    window.location.href = '{{ adminFullPath }}/roles';
+                } else if (response.data.errors) {
+                    this.errors = response.data.errors;
+                }
+            } catch (error) {
+                if (error.response && error.response.data && error.response.data.errors) {
+                    this.errors = error.response.data.errors;
+                } else {
+                    alert('Error creating role');
+                }
+            } finally {
+                this.saving = false;
+            }
+        }
+    }
+}).mount('#createRoleApp');
+</script>
+{% endblock %}

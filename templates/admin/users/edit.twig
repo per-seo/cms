@@ -1,0 +1,119 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}Edit User{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Edit User</h1>
+            </div>
+            <div class="col-sm-6">
+                <div class="float-sm-right">
+                    <a href="{{ adminFullPath }}/users" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Users
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content" id="userForm">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Username *</label>
+                            <input type="text" class="form-control" v-model="user.username" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Email *</label>
+                            <input type="email" class="form-control" v-model="user.email" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Password (leave blank to keep current)</label>
+                            <input type="password" class="form-control" v-model="user.password">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Role *</label>
+                            <select class="form-control" v-model="user.role_id" required>
+                                <option v-for="role in roles" :key="role.id" :value="role.id" :selected="role.id === user.role_id">
+                                    ${role.slug}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select class="form-control" v-model="user.status">
+                                <option value="1" :selected="user.status === '1'">Active</option>
+                                <option value="0" :selected="user.status === '0'">Inactive</option>
+                            </select>
+                        </div>
+
+                        <button @click="saveUser" class="btn btn-primary" :disabled="saving">
+                            <i class="fas fa-save"></i> Update User
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const { createApp } = Vue;
+
+createApp({
+    delimiters: ['${', '}'],
+    data() {
+        return {
+            user: {
+                username: '{{ users.user|default("") }}',
+                email: '{{ users.email|default("") }}',
+                password: '',
+                role_id: {{ users.role_id|default(0) }},
+                status: '{{ users.status|default("active") }}'
+            },
+            roles: {{ roles|json_encode|raw }},
+            saving: false
+        }
+    },
+    methods: {
+        async saveUser() {
+            this.saving = true;
+            
+            try {
+                const response = await axios.put(basepath + '/admin/users/{{ user.id }}', this.user);
+                
+                if (response.data.success) {
+                    alert('User updated successfully!');
+                    window.location.href = basepath + '/admin/users';
+                }
+            } catch (error) {
+                if (error.response?.data?.errors) {
+                    let errorMsg = '';
+                    for (let field in error.response.data.errors) {
+                        errorMsg += error.response.data.errors[field].join(', ') + '\n';
+                    }
+                    alert('Validation errors:\n' + errorMsg);
+                } else {
+                    alert('Error updating user: ' + (error.response?.data?.message || error.message));
+                }
+            } finally {
+                this.saving = false;
+            }
+        }
+    }
+}).mount('#userForm');
+</script>
+{% endblock %}

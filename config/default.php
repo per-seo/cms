@@ -13,7 +13,8 @@ return [
         'template' => 'default',
         'locale' => false,
         'language' => 'en',
-        'languages' => ['it', 'en']
+        'languages' => ['it', 'en'],
+        'adminpath' => 'admin'
     ],
     'settings_root'     => realpath(__DIR__ .'/..'),
     'settings_temp' => realpath(__DIR__ .'/../tmp'),

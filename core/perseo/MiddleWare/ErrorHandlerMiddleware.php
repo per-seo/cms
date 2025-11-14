@@ -73,6 +73,12 @@ final class ErrorHandlerMiddleware implements MiddlewareInterface
             },
             $errorTypes
         );
+		set_exception_handler(
+            function (Throwable $exception) {
+				$this->logger->error("errore");
+				//$this->logger->error($exception);
+            }
+        );
 
         return $handler->handle($request);
     }

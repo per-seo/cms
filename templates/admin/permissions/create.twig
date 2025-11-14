@@ -1,0 +1,124 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}Create Permission{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Create Permission</h1>
+            </div>
+            <div class="col-sm-6">
+                <div class="float-sm-right">
+                    <a href="{{ adminFullPath }}/permissions" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content" id="createPermissionApp">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Permission Information</h3>
+                    </div>
+                    <div class="card-body">
+                        <form @submit.prevent="savePermission">
+                            <div class="form-group">
+                                <label for="slug">Slug <span class="text-danger">*</span></label>
+                                <input 
+                                    type="text" 
+                                    class="form-control" 
+                                    id="slug"
+                                    v-model="form.slug"
+                                    :class="{'is-invalid': errors.slug}"
+                                    required
+                                >
+                                <small class="form-text text-muted">
+                                    Unique identifier (lowercase, use underscores)
+                                </small>
+                                <div class="invalid-feedback" v-if="errors.slug">
+                                    ${errors.slug[0]}
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="description">Description</label>
+                                <textarea 
+                                    class="form-control" 
+                                    id="description"
+                                    v-model="form.description"
+                                    rows="3"
+                                ></textarea>
+                                <small class="form-text text-muted">
+                                    Describe what this permission allows users to do
+                                </small>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="card-footer">
+                        <button @click="savePermission" class="btn btn-success" :disabled="saving">
+                            <i class="fas fa-save"></i> 
+                            ${saving ? 'Saving...' : 'Create Permission'}
+                        </button>
+                        <a href="{{ adminFullPath }}/permissions" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const { createApp } = Vue;
+const adminFullPath = '{{ adminFullPath }}';
+
+createApp({
+    delimiters: ['${', '}'],
+    data() {
+        return {
+            form: {
+                slug: '',
+                description: ''
+            },
+            errors: {},
+            saving: false
+        }
+    },
+    methods: {
+        async savePermission() {
+            this.saving = true;
+            this.errors = {};
+            
+            try {
+                const response = await axios.post(adminFullPath + '/permissions', this.form);
+                
+                if (response.data.success) {
+                    window.location.href = adminFullPath + '/permissions';
+                } else if (response.data.errors) {
+                    this.errors = response.data.errors;
+                }
+            } catch (error) {
+                if (error.response && error.response.data && error.response.data.errors) {
+                    this.errors = error.response.data.errors;
+                } else {
+                    alert('Error creating permission');
+                }
+            } finally {
+                this.saving = false;
+            }
+        }
+    }
+}).mount('#createPermissionApp');
+</script>
+{% endblock %}

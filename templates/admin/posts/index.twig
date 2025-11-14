@@ -1,0 +1,190 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}Posts{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Posts</h1>
+            </div>
+            <div class="col-sm-6">
+                <div class="float-sm-right">
+                    <a href="{{ adminFullPath }}/admin/posts/create" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Post
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content" id="postsApp">
+    <div class="container-fluid">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-md-6">
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            placeholder="Search posts..."
+                            v-model="search"
+                            @input="loadPosts"
+                        >
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-control" v-model="statusFilter" @change="loadPosts">
+                            <option value="">All Status</option>
+                            <option value="published">Published</option>
+                            <option value="draft">Draft</option>
+                            <option value="scheduled">Scheduled</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th width="150">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="loading">
+                            <td colspan="5" class="text-center">
+                                <i class="fas fa-spinner fa-spin"></i> Loading...
+                            </td>
+                        </tr>
+                        <tr v-else-if="posts.length === 0">
+                            <td colspan="5" class="text-center">No posts found</td>
+                        </tr>
+                        <tr v-else v-for="post in posts" :key="post.id">
+                            <td>
+                                <strong>${post.title}</strong>
+                                <br>
+                                <small class="text-muted">${post.excerpt ? post.excerpt.substring(0, 100) + '...' : ''}</small>
+                            </td>
+                            <td>${post.author_name}</td>
+                            <td>
+                                <span :class="'badge badge-' + getStatusColor(post.status)">
+                                    ${post.status}
+                                </span>
+                            </td>
+                            <td>${formatDate(post.created_at)}</td>
+                            <td>
+                                <a :href="'{{ adminFullPath }}/posts/edit/' + post.id" class="btn btn-sm btn-info">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button @click="deletePost(post.id)" class="btn btn-sm btn-danger">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer clearfix" v-if="pagination.totalPages > 1">
+                <ul class="pagination pagination-sm m-0 float-right">
+                    <li class="page-item" :class="{disabled: pagination.page === 1}">
+                        <a class="page-link" href="#" @click.prevent="changePage(pagination.page - 1)">«</a>
+                    </li>
+                    <li 
+                        class="page-item" 
+                        v-for="p in pagination.totalPages" 
+                        :key="p"
+                        :class="{active: p === pagination.page}"
+                    >
+                        <a class="page-link" href="#" @click.prevent="changePage(p)">${p}</a>
+                    </li>
+                    <li class="page-item" :class="{disabled: pagination.page === pagination.totalPages}">
+                        <a class="page-link" href="#" @click.prevent="changePage(pagination.page + 1)">»</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const { createApp } = Vue;
+
+createApp({
+    delimiters: ['${', '}'],
+    data() {
+        return {
+            posts: {{ posts|json_encode|raw }},
+            pagination: {{ pagination|json_encode|raw }},
+            search: '',
+            statusFilter: '',
+            loading: false
+        }
+    },
+    methods: {
+        async loadPosts() {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams({
+                    page: this.pagination.page,
+                    per_page: this.pagination.perPage
+                });
+                
+                if (this.search) params.append('search', this.search);
+                if (this.statusFilter) params.append('status', this.statusFilter);
+                
+                const response = await axios.get('{{ adminFullPath }}/admin/api/posts?' + params);
+                this.posts = response.data.data;
+                this.pagination = {
+                    page: response.data.page,
+                    perPage: response.data.perPage,
+                    total: response.data.total,
+                    totalPages: response.data.totalPages
+                };
+            } catch (error) {
+                alert('Error loading posts');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        changePage(page) {
+            if (page >= 1 && page <= this.pagination.totalPages) {
+                this.pagination.page = page;
+                this.loadPosts();
+            }
+        },
+        
+        async deletePost(id) {
+            if (!confirm('Are you sure you want to delete this post?')) return;
+            
+            try {
+                await axios.delete('{{ adminFullPath }}/admin/posts/' + id);
+                this.loadPosts();
+            } catch (error) {
+                alert('Error deleting post');
+            }
+        },
+        
+        getStatusColor(status) {
+            const colors = {
+                published: 'success',
+                draft: 'warning',
+                scheduled: 'info'
+            };
+            return colors[status] || 'secondary';
+        },
+        
+        formatDate(date) {
+            return new Date(date).toLocaleDateString();
+        }
+    }
+}).mount('#postsApp');
+</script>
+{% endblock %}

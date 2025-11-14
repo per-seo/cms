@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - PerSeo CMS Admin</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        .login-page {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-box {
+            width: 400px;
+        }
+        .card {
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="hold-transition login-page">
+<div class="login-box" id="app">
+    <div class="card card-outline card-primary">
+        <div class="card-header text-center">
+            <h1 class="h3"><b>PerSeo</b> CMS</h1>
+        </div>
+        <div class="card-body">
+            <p class="login-box-msg">Sign in to start your session</p>
+
+            <div v-if="error" class="alert alert-danger alert-dismissible">
+                <button type="button" class="close" @click="error = null">&times;</button>
+                ${error}
+            </div>
+
+            <form @submit.prevent="login">
+                <div class="input-group mb-3">
+                    <input 
+                        type="text" 
+                        class="form-control" 
+                        placeholder="Username or Email"
+                        v-model="credentials.username"
+                        required
+                    >
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-user"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group mb-3">
+                    <input 
+                        type="password" 
+                        class="form-control" 
+                        placeholder="Password"
+                        v-model="credentials.password"
+                        required
+                    >
+                    <div class="input-group-append">
+                        <div class="input-group-text">
+                            <span class="fas fa-lock"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary btn-block" :disabled="loading">
+                            <span v-if="loading">
+                                <i class="fas fa-spinner fa-spin"></i> Signing In...
+                            </span>
+                            <span v-else>Sign In</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+    data() {
+        return {
+            credentials: {
+                username: '',
+                password: ''
+            },
+            loading: false,
+            error: null
+        }
+    },
+    methods: {
+        async login() {
+            this.loading = true;
+            this.error = null;
+            
+            try {
+                const response = await axios.post('{{ basepath }}/{{ adminpath }}/auth/login', this.credentials);
+                
+                if (response.data.success) {
+                    window.location.href = response.data.redirect;
+                } else {
+                    this.error = response.data.message || 'Login failed';
+                }
+            } catch (error) {
+                if (error.response && error.response.data) {
+                    this.error = error.response.data.message || 'Login failed';
+                } else {
+                    this.error = 'An error occurred. Please try again.';
+                }
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}).mount('#app');
+</script>
+</body>
+</html>

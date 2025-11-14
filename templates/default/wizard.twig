@@ -114,6 +114,10 @@
 						  </div>
 						</p>
 						<p>
+						  <div class="input-group"><span class="input-group-addon">{{ lang.l_alias_admin }}</span><input type="text" name="adminpath" id="adminpath" class="form-control" placeholder="{{ lang.l_alias_admin_ph }}">
+						  </div>
+						</p>
+						<p>
 						  <div class="input-group"><span class="input-group-addon">{{ lang.l_prefix_salt }}</span><input type="text" name="salt" id="salt" class="form-control" placeholder="{{ lang.l_prefix_salt_ph }}"><span class="input-group-btn"><button type="button" id="saltbtn" class="btn btn-default">{{ lang.l_generate }}</button></span></div>
 						</p>
 						<p>
@@ -297,8 +301,10 @@
 			mainpass = makerand("abcdefghijklmnopqrstuvwxyz0123456789", 12);
 			tbl = makerand("abcdefghijklmnopqrstuvwxyz", 5) + "_";
 			fnamepx = makerand("abcdefghijklmnopqrstuvwxyz", 8) + "_";
+			alsadm = makerand("abcdefghijklmnopqrstuvwxyz", 12);
 			$('#salt').val(salt);
 			$('#prefix').val(tbl);
+			$('#adminpath').val(alsadm);
 			$('#log_fname').val(fnamepx);
 			$('#maintenancekey').val(mainpass);
 			$("#saltbtn").click(function() {
@@ -472,7 +478,7 @@
 						$.ajax({
 							url: '{{ basepath }}/wizard/install/',
 							type: 'post',
-							data: { "{{ csrf.nameKey }}": $( "input[name='{{ csrf.nameKey }}']" ).val(), "{{ csrf.valueKey }}": $( "input[name='{{ csrf.valueKey }}']" ).val(), "lang": language, "defaultlang": defaultlang, "locale": locale, "template": template, "driver": dbtype, "title": $("#title").val(), "prefix": $("#prefix").val(), "salt": $("#salt").val(), "maintenancekey": $("#maintenancekey").val(), "encoding": $("#encoding").val(), "cookadm": $("#adm_cookname").val(), "cookusr": $("#usr_cookname").val(), "cookexp": $("#cookie_expire").val(), "cookmaxexp": $("#cookie_max_expire").val(), "cookpath": $("#cookie_path").val(), "admin": $("#username").val(), "email": $("#email").val(), "password": $("#pass").val(), "facebook_app": $("#facebook_app").val(), "facebook_secret": $("#facebook_secret").val(), "google_key": $("#google_key").val(), "google_secret": $("#google_secret").val()},
+							data: { "{{ csrf.nameKey }}": $( "input[name='{{ csrf.nameKey }}']" ).val(), "{{ csrf.valueKey }}": $( "input[name='{{ csrf.valueKey }}']" ).val(), "lang": language, "defaultlang": defaultlang, "locale": locale, "template": template, "driver": dbtype, "title": $("#title").val(), "prefix": $("#prefix").val(), "adminpath": $("#adminpath").val(), "salt": $("#salt").val(), "maintenancekey": $("#maintenancekey").val(), "encoding": $("#encoding").val(), "cookadm": $("#adm_cookname").val(), "cookusr": $("#usr_cookname").val(), "cookexp": $("#cookie_expire").val(), "cookmaxexp": $("#cookie_max_expire").val(), "cookpath": $("#cookie_path").val(), "admin": $("#username").val(), "email": $("#email").val(), "password": $("#pass").val(), "facebook_app": $("#facebook_app").val(), "facebook_secret": $("#facebook_secret").val(), "google_key": $("#google_key").val(), "google_secret": $("#google_secret").val()},
 							success: function(response) {
 								var result = JSON.parse(response);
 								if (result.code == 0) {
@@ -480,7 +486,7 @@
 								setTimeout(function(){ location.href="{{ basepath }}/" } , 3000);
 								}
 								else {
-								$('#result').append('<center><i class="fa fa-times-circle-o fa-5x text-danger"></i><br>{{ lang.l_install_ko }}&nbsp;&nbsp;' + result.msg + '</center>');
+								$('#endresult').append('<center><i class="fa fa-times-circle-o fa-5x text-danger"></i><br>{{ lang.l_install_ko }}&nbsp;&nbsp;' + result.msg + '</center>');
 								}
 							}
 						});
@@ -489,7 +495,7 @@
 						$.ajax({
 							url: '{{ basepath }}/wizard/install/',
 							type: 'post',
-							data: { "{{ csrf.nameKey }}": $( "input[name='{{ csrf.nameKey }}']" ).val(), "{{ csrf.valueKey }}": $( "input[name='{{ csrf.valueKey }}']" ).val(), "lang": language, "defaultlang": defaultlang, "locale": locale, "template": template, "driver": dbtype, "dbhost": dbhost, "dbport": dbport, "dbname": dbname, "dbuser": dbuser, "dbpass": dbpass, "dbencoding": dbenc, "title": $("#title").val(), "prefix": $("#prefix").val(), "salt": $("#salt").val(), "maintenancekey": $("#maintenancekey").val(), "encoding": $("#encoding").val(), "cookadm": $("#adm_cookname").val(), "cookusr": $("#usr_cookname").val(), "cookexp": $("#cookie_expire").val(), "cookmaxexp": $("#cookie_max_expire").val(), "cookpath": $("#cookie_path").val(), "admin": $("#username").val(), "email": $("#email").val(), "password": $("#pass").val(), "facebook_app": $("#facebook_app").val(), "facebook_secret": $("#facebook_secret").val(), "google_key": $("#google_key").val(), "google_secret": $("#google_secret").val()},
+							data: { "{{ csrf.nameKey }}": $( "input[name='{{ csrf.nameKey }}']" ).val(), "{{ csrf.valueKey }}": $( "input[name='{{ csrf.valueKey }}']" ).val(), "lang": language, "defaultlang": defaultlang, "locale": locale, "template": template, "driver": dbtype, "dbhost": dbhost, "dbport": dbport, "dbname": dbname, "dbuser": dbuser, "dbpass": dbpass, "dbencoding": dbenc, "dbcollation":dbcoll, "title": $("#title").val(), "prefix": $("#prefix").val(), "adminpath": $("#adminpath").val(), "salt": $("#salt").val(), "maintenancekey": $("#maintenancekey").val(), "encoding": $("#encoding").val(), "cookadm": $("#adm_cookname").val(), "cookusr": $("#usr_cookname").val(), "cookexp": $("#cookie_expire").val(), "cookmaxexp": $("#cookie_max_expire").val(), "cookpath": $("#cookie_path").val(), "admin": $("#username").val(), "email": $("#email").val(), "password": $("#pass").val(), "facebook_app": $("#facebook_app").val(), "facebook_secret": $("#facebook_secret").val(), "google_key": $("#google_key").val(), "google_secret": $("#google_secret").val()},
 							success: function(response) {
 								var result = JSON.parse(response);
 								if (result.code == 0) {
@@ -497,7 +503,7 @@
 								setTimeout(function(){ location.href="{{ basepath }}/" } , 3000);
 								}
 								else {
-								$('#result').append('<center><i class="fa fa-times-circle-o fa-5x text-danger"></i><br>{{ lang.l_install_ko }}&nbsp;&nbsp;' + result.msg + '</center>');
+								$('#endresult').append('<center><i class="fa fa-times-circle-o fa-5x text-danger"></i><br>{{ lang.l_install_ko }}&nbsp;&nbsp;' + result.msg + '</center>');
 								}
 							}
 						});
@@ -506,7 +512,7 @@
 						$.ajax({
 							url: '{{ basepath }}/wizard/install/',
 							type: 'post',
-							data: { "{{ csrf.nameKey }}": $( "input[name='{{ csrf.nameKey }}']" ).val(), "{{ csrf.valueKey }}": $( "input[name='{{ csrf.valueKey }}']" ).val(), "lang": language, "defaultlang": defaultlang, "locale": locale, "template": template, "driver": dbtype, "dbfile": dbfile, "title": $("#title").val(), "prefix": $("#prefix").val(), "salt": $("#salt").val(), "maintenancekey": $("#maintenancekey").val(), "encoding": $("#encoding").val(), "cookadm": $("#adm_cookname").val(), "cookusr": $("#usr_cookname").val(), "cookexp": $("#cookie_expire").val(), "cookmaxexp": $("#cookie_max_expire").val(), "cookpath": $("#cookie_path").val(), "admin": $("#username").val(), "email": $("#email").val(), "password": $("#pass").val(), "facebook_app": $("#facebook_app").val(), "facebook_secret": $("#facebook_secret").val(), "google_key": $("#google_key").val(), "google_secret": $("#google_secret").val()},
+							data: { "{{ csrf.nameKey }}": $( "input[name='{{ csrf.nameKey }}']" ).val(), "{{ csrf.valueKey }}": $( "input[name='{{ csrf.valueKey }}']" ).val(), "lang": language, "defaultlang": defaultlang, "locale": locale, "template": template, "driver": dbtype, "dbfile": dbfile, "title": $("#title").val(), "prefix": $("#prefix").val(), "adminpath": $("#adminpath").val(), "salt": $("#salt").val(), "maintenancekey": $("#maintenancekey").val(), "encoding": $("#encoding").val(), "cookadm": $("#adm_cookname").val(), "cookusr": $("#usr_cookname").val(), "cookexp": $("#cookie_expire").val(), "cookmaxexp": $("#cookie_max_expire").val(), "cookpath": $("#cookie_path").val(), "admin": $("#username").val(), "email": $("#email").val(), "password": $("#pass").val(), "facebook_app": $("#facebook_app").val(), "facebook_secret": $("#facebook_secret").val(), "google_key": $("#google_key").val(), "google_secret": $("#google_secret").val()},
 							success: function(response) {
 								var result = JSON.parse(response);
 								if (result.code == 0) {
@@ -514,7 +520,7 @@
 								setTimeout(function(){ location.href="{{ basepath }}/" } , 3000);
 								}
 								else {
-								$('#result').append('<center><i class="fa fa-times-circle-o fa-5x text-danger"></i><br>{{ lang.l_install_ko }}&nbsp;&nbsp;' + result.msg + '</center>');
+								$('#endresult').append('<center><i class="fa fa-times-circle-o fa-5x text-danger"></i><br>{{ lang.l_install_ko }}&nbsp;&nbsp;' + result.msg + '</center>');
 								}
 							}
 						});

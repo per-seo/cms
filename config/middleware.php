@@ -26,6 +26,8 @@ return function (App $app) {
 
     // Add the Slim built-in routing middleware
     $app->addRoutingMiddleware();
+	
+	$app->add(Admin::class);
     
     // Add locale in url Middleware
     $app->add(Locale::class);
@@ -33,8 +35,6 @@ return function (App $app) {
     $app->add(Alias::class);
     
     $app->add(Maintenance::class);
-    
-    $app->add(Admin::class);
     
     $app->add(Wizard::class);
     
@@ -54,5 +54,5 @@ return function (App $app) {
     // Catch exceptions and errors
     $app->add(ErrorMiddleware::class);
     
-    $app->add(GZIP::class);
+    //$app->add(GZIP::class);
 };

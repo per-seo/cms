@@ -18,6 +18,7 @@ use Odan\Session\Middleware\SessionStartMiddleware;
 use PerSeo\DB;
 use PerSeo\LoggerFactory;
 use PerSeo\MiddleWare\DefaultErrorRender;
+use PerSeo\ErrorRenderer\JsonError;
 use Psr\Log\LoggerInterface;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
@@ -49,7 +50,7 @@ return [
         return $logger;
     },
 
-    ErrorMiddleware::class => function (ContainerInterface $container) {
+	ErrorMiddleware::class => function (ContainerInterface $container) {
         $app = $container->get(App::class);
         $settings = $container->get('settings_error');
         $errorMiddleware = new ErrorMiddleware(
@@ -61,6 +62,7 @@ return [
         );
         $errorHandler = $errorMiddleware->getDefaultErrorHandler();
         $errorHandler->registerErrorRenderer('text/html', DefaultErrorRender::class);
+		$errorHandler->registerErrorRenderer('application/json', JsonError::class);
         return $errorMiddleware;
     },
     

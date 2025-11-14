@@ -31,7 +31,9 @@
         "per-seo/gzip": ">=1.0",
         "per-seo/language": ">=1.0",
         "per-seo/forwarded-proto": ">=1.0",
-		"per-seo/httphtmlexception": ">=1.0"
+		"per-seo/httphtmlexception": ">=1.0",
+        "per-seo/jsonerror": "^1.0",
+        "firebase/php-jwt": "^6.0"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": ">=3",

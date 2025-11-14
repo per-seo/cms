@@ -21,6 +21,7 @@ class Config
 		'encoding' => '" . (string) $params['encoding'] . "',
 		'template' => '" . (string) $params['template'] . "',
 		'locale' => " . (boolval($params['locale']) ? 'true' : 'false') . ",
+		'adminpath' => '" . (string) $params['adminpath'] . "',
 		'maintenance' => false,
 		'maintenancekey' => '" . (string) $params['maintenancekey'] . "',
 		'language' => '" . (string) $params['defaultlang'] . "',

@@ -14,6 +14,7 @@ use Slim\Exception\HttpNotImplementedException;
 use Slim\Exception\HttpUnauthorizedException;
 use Slim\Handlers\ErrorHandler as SlimErrorHandler;
 use Throwable;
+use PDOException;
 
 class HttpErrorHandler extends SlimErrorHandler
 {
@@ -24,10 +25,8 @@ class HttpErrorHandler extends SlimErrorHandler
     public const RESOURCE_NOT_FOUND = 'RESOURCE_NOT_FOUND';
     public const SERVER_ERROR = 'SERVER_ERROR';
     public const UNAUTHENTICATED = 'UNAUTHENTICATED';
-    /**
-     * @inheritdoc
-     */
-         
+    public const DATABASE_ERROR = 'DATABASE_ERROR';
+
     protected function respond(): Response
     {
         $exception = $this->exception;
@@ -58,14 +57,43 @@ class HttpErrorHandler extends SlimErrorHandler
                 $statusCode = 501;
                 $type = self::NOT_IMPLEMENTED;
             }
-        }
-
-        if (
-            !($exception instanceof HttpException)
-            && $exception instanceof Throwable
-            && $this->displayErrorDetails
-        ) {
-            $description = $exception->getMessage();
+        } elseif ($exception instanceof PDOException) {
+            // Handle PDOException specifically
+            $statusCode = 500;
+            $type = self::DATABASE_ERROR;
+            $description = 'A database error occurred.';
+            
+            if ($this->displayErrorDetails) {
+                $description = $exception->getMessage();
+            }
+            
+            // Log PDO exceptions with details
+            if ($this->logger) {
+                $this->logger->error('PDOException: ' . $exception->getMessage(), [
+                    'code' => $exception->getCode(),
+                    'file' => $exception->getFile(),
+                    'line' => $exception->getLine()
+                ]);
+            }
+        } elseif ($exception instanceof Throwable) {
+            // Handle all other exceptions
+            $statusCode = 500;
+            $type = self::SERVER_ERROR;
+            $description = 'An internal server error occurred.';
+            
+            if ($this->displayErrorDetails) {
+                $description = $exception->getMessage();
+            }
+            
+            // Log all exceptions
+            if ($this->logger) {
+                $this->logger->error('Exception: ' . $exception->getMessage(), [
+                    'code' => $exception->getCode(),
+                    'file' => $exception->getFile(),
+                    'line' => $exception->getLine(),
+                    'trace' => $exception->getTraceAsString()
+                ]);
+            }
         }
 
         $error = [
@@ -75,6 +103,17 @@ class HttpErrorHandler extends SlimErrorHandler
                 'description' => $description,
             ],
         ];
+        
+        // Add debug information if displayErrorDetails is enabled
+        if ($this->displayErrorDetails && $exception instanceof Throwable) {
+            $error['debug'] = [
+                'message' => $exception->getMessage(),
+                'file' => $exception->getFile(),
+                'line' => $exception->getLine(),
+                'trace' => $exception->getTrace()
+            ];
+        }
+
         $encodedPayload = json_encode($error, JSON_PRETTY_PRINT);
 
         $response = $this->responseFactory->createResponse($statusCode);

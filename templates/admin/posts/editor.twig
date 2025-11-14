@@ -1,0 +1,448 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}{{ mode == 'create' ? 'Create' : 'Edit' }} Post{% endblock %}
+
+{% block styles %}
+<link rel="stylesheet" href="{{ basepath }}/templates/default/css/grapesjs/grapes.min.css">
+<style>
+    .gjs-cv-canvas {
+        width: 100%;
+        height: 500px;
+    }
+    #gjs {
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        overflow: hidden;
+        height: 550px;
+    }
+    .gjs-frame {
+        height: calc(100% - 2px) !important;
+        top: 2px !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>{{ mode == 'create' ? 'Create New Post' : 'Edit Post' }}</h1>
+            </div>
+            <div class="col-sm-6">
+                <div class="float-sm-right">
+                    <a href="{{ adminFullPath }}/posts" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Posts
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content" id="postEditor">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-9">
+                <!-- Language Tabs -->
+                {% if mode == 'edit' %}
+                <div class="card">
+                    <div class="card-header p-0">
+                        <ul class="nav nav-tabs">
+                            {% for lang in availableLanguages %}
+                            <li class="nav-item">
+                                <a class="nav-link {{ lang == language ? 'active' : '' }}" 
+                                   href="{{ adminFullPath }}/posts/edit/{{ post.id }}?lang={{ lang }}">
+                                    {{ lang|upper }}
+                                    {% if postLangs[lang] is defined %}
+                                        <i class="fas fa-check text-success"></i>
+                                    {% else %}
+                                        <i class="fas fa-plus text-muted"></i>
+                                    {% endif %}
+                                </a>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <input 
+                                type="text" 
+                                class="form-control form-control-lg" 
+                                placeholder="Enter post title..."
+                                v-model="post.title"
+                                @input="generateSlug"
+                            >
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Slug</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                v-model="post.slug"
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label>Content</label>
+                            <div id="gjs"></div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Excerpt</label>
+                            <textarea 
+                                class="form-control" 
+                                rows="3"
+                                v-model="post.excerpt"
+                                placeholder="Brief description..."
+                            ></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEO Section -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">SEO Settings</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Meta Title</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                v-model="post.meta_title"
+                                placeholder="SEO title (leave empty to use post title)"
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label>Meta Description</label>
+                            <textarea 
+                                class="form-control" 
+                                rows="3"
+                                v-model="post.meta_description"
+                                placeholder="SEO description"
+                            ></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Meta Keywords</label>
+                            <input 
+                                type="text" 
+                                class="form-control" 
+                                v-model="post.meta_keywords"
+                                placeholder="keyword1, keyword2, keyword3"
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Publish</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select class="form-control" v-model="post.status">
+                                <option value="draft">Draft</option>
+                                <option value="published">Published</option>
+                                <option value="scheduled">Scheduled</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <button @click="savePost('draft')" class="btn btn-secondary btn-block" :disabled="saving">
+                                <i class="fas fa-save"></i> Save Draft
+                            </button>
+                            <button @click="savePost('published')" class="btn btn-primary btn-block" :disabled="saving">
+                                <i class="fas fa-paper-plane"></i> 
+                                ${mode == 'create' ? 'Publish' : 'Update'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Featured Image</h3>
+                    </div>
+                    <div class="card-body">
+                        <div v-if="post.featured_image" class="mb-3">
+                            <img :src="post.featured_image" class="img-fluid" alt="Featured Image">
+                            <button @click="post.featured_image = null" class="btn btn-sm btn-danger mt-2">
+                                Remove
+                            </button>
+                        </div>
+                        <button @click="openMediaLibrary" class="btn btn-primary btn-block">
+                            <i class="fas fa-image"></i> Set Featured Image
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Categories</h3>
+                    </div>
+                    <div class="card-body">
+                        <div v-for="category in categories" :key="category.id" class="custom-control custom-checkbox">
+                            <input 
+                                type="checkbox" 
+                                class="custom-control-input" 
+                                :id="'cat-' + category.id"
+                                :value="category.id"
+                                v-model="post.categories"
+                            >
+                            <label class="custom-control-label" :for="'cat-' + category.id">
+                                ${category.name}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ basepath }}/templates/default/js/grapesjs/grapes.min.js"></script>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+    delimiters: ['${', '}'],
+    data() {
+        return {
+            mode: '{{ mode }}',
+            post: {
+                title: {{ post.title is defined and post.title ? ('"' ~ post.title|e('js') ~ '"')|raw : '""' }},
+                slug: {{ post.slug is defined and post.slug ? ('"' ~ post.slug|e('js') ~ '"')|raw : '""' }},
+                content: {{ post.content is defined and post.content ? ('"' ~ post.content|e('js') ~ '"')|raw : '""' }},
+                excerpt: {{ post.excerpt is defined and post.excerpt ? ('"' ~ post.excerpt|e('js') ~ '"')|raw : '""' }},
+                featured_image: {{ post.featured_image is defined and post.featured_image ? ('"' ~ post.featured_image|e('js') ~ '"')|raw : '""' }},
+                meta_title: {{ post.meta_title is defined and post.meta_title ? ('"' ~ post.meta_title|e('js') ~ '"')|raw : '""' }},
+                meta_description: {{ post.meta_description is defined and post.meta_description ? ('"' ~ post.meta_description|e('js') ~ '"')|raw : '""' }},
+                meta_keywords: {{ post.meta_keywords is defined and post.meta_keywords ? ('"' ~ post.meta_keywords|e('js') ~ '"')|raw : '""' }},
+                status: {{ post.status is defined and post.status ? ('"' ~ post.status|e('js') ~ '"')|raw : '"draft"' }},
+                categories: {{ post.categories is defined ? (post.categories|json_encode|raw) : '[]' }}
+            },
+            categories: {{ categories is defined ? (categories|json_encode|raw) : '[]' }},
+            editor: null,
+            saving: false
+        }
+    },
+    mounted() {
+        this.$nextTick(() => {
+            this.initEditor();
+        });
+    },
+    methods: {
+        initEditor() {
+            try {
+                // Parse content - handle both JSON and HTML  
+                let htmlContent = '';
+                if (this.post.content) {
+                    if (typeof this.post.content === 'string') {
+                        // Check if it's HTML or JSON
+                        if (this.post.content.trim().startsWith('<')) {
+                            // It's HTML - use directly
+                            htmlContent = this.post.content;
+                        } else if (this.post.content.trim().startsWith('{')) {
+                            // It's JSON - show message to re-edit
+                            htmlContent = '<p>Content is in JSON format. Please re-edit using the visual editor.</p>';
+                        }
+                    }
+                }
+
+                // Initialize GrapesJS
+                this.editor = grapesjs.init({
+                    container: '#gjs',
+                    height: '500px',
+                    width: 'auto',
+                    storageManager: false,
+                    canvas: {
+                        styles: [
+                            'https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css'
+                        ]
+                    }
+                });
+                
+                // Override the export-template command to make it editable
+                this.editor.Commands.add('export-template', {
+                    run: (editor) => {
+                        const modal = editor.Modal;
+                        
+                        // Create container
+                        const container = document.createElement('div');
+                        const btnEdit = document.createElement('button');
+                        
+                        // Create textareas
+                        const htmlTextarea = document.createElement('textarea');
+                        const cssTextarea = document.createElement('textarea');
+                        
+                        htmlTextarea.style.cssText = 'width: 100%; min-height: 400px; font-family: monospace; padding: 10px; border: 1px solid #ddd;';
+                        cssTextarea.style.cssText = 'width: 100%; min-height: 400px; font-family: monospace; padding: 10px; border: 1px solid #ddd;';
+                        
+                        htmlTextarea.value = editor.getHtml();
+                        // Get only custom CSS rules, not external stylesheets
+                        const cssComposer = editor.CssComposer;
+                        const customCss = cssComposer.getAll().map(rule => rule.toCSS()).join('\n');
+                        cssTextarea.value = customCss;
+                        
+                        btnEdit.innerHTML = 'Apply Changes';
+                        btnEdit.className = 'btn btn-primary';
+                        btnEdit.style.cssText = 'margin: 10px 0;';
+                        btnEdit.onclick = () => {
+                            const htmlCode = htmlTextarea.value;
+                            const cssCode = cssTextarea.value;
+                            
+                            // Update HTML
+                            const comps = editor.DomComponents.getComponents();
+                            comps.reset();
+                            comps.add(htmlCode);
+                            
+                            // Update CSS - remove all existing rules first
+                            const cssComposer = editor.CssComposer;
+                            const allRules = cssComposer.getAll();
+                            // Create array copy to avoid modification during iteration
+                            const rulesToRemove = [...allRules];
+                            rulesToRemove.forEach(rule => cssComposer.remove(rule));
+                            
+                            // Add new CSS by parsing it
+                            if (cssCode.trim()) {
+                                editor.addComponents(`<style>${cssCode}</style>`);
+                            }
+                            
+                            modal.close();
+                        };
+                        
+                        // Create tabs
+                        const tabs = document.createElement('div');
+                        tabs.style.cssText = 'margin-bottom: 10px;';
+                        tabs.innerHTML = `
+                            <button class="btn btn-sm btn-secondary tab-btn active" data-tab="html" style="margin-right: 5px;">HTML</button>
+                            <button class="btn btn-sm btn-secondary tab-btn" data-tab="css">CSS</button>
+                        `;
+                        
+                        const htmlSection = document.createElement('div');
+                        const cssSection = document.createElement('div');
+                        cssSection.style.display = 'none';
+                        
+                        htmlSection.appendChild(htmlTextarea);
+                        cssSection.appendChild(cssTextarea);
+                        
+                        container.appendChild(btnEdit);
+                        container.appendChild(tabs);
+                        container.appendChild(htmlSection);
+                        container.appendChild(cssSection);
+                        
+                        modal.setTitle('Edit Code');
+                        modal.setContent(container);
+                        modal.open();
+                        
+                        // Tab switching
+                        setTimeout(() => {
+                            const tabBtns = container.querySelectorAll('.tab-btn');
+                            tabBtns.forEach(btn => {
+                                btn.onclick = () => {
+                                    tabBtns.forEach(b => b.classList.remove('active'));
+                                    btn.classList.add('active');
+                                    
+                                    if (btn.dataset.tab === 'html') {
+                                        htmlSection.style.display = 'block';
+                                        cssSection.style.display = 'none';
+                                    } else {
+                                        htmlSection.style.display = 'none';
+                                        cssSection.style.display = 'block';
+                                    }
+                                };
+                            });
+                        }, 100);
+                    }
+                });
+
+                // Load content
+                if (htmlContent) {
+                    this.editor.setComponents(htmlContent);
+                }
+
+                console.log('GrapesJS is ready!');
+            } catch (error) {
+                console.error('GrapesJS initialization failed:', error);
+                document.getElementById('gjs').innerHTML = '<div class="alert alert-danger">Editor failed to load: ' + error.message + '</div>';
+            }
+        },
+        
+        async uploadImage(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await axios.post('{{ adminFullPath }}/media/upload', formData);
+                return {
+                    success: 1,
+                    file: {
+                        url: response.data.media.path
+                    }
+                };
+            } catch (error) {
+                return {
+                    success: 0
+                };
+            }
+        },
+        
+        generateSlug() {
+            if (this.mode === 'create' || !this.post.slug) {
+                this.post.slug = this.post.title
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+            }
+        },
+        
+        async savePost(status) {
+            this.saving = true;
+            
+            try {
+                // Get HTML content from GrapesJS
+                const htmlContent = this.editor.getHtml();
+                this.post.content = htmlContent;
+                this.post.status = status;
+                
+                const url = this.mode === 'create' 
+                    ? '{{ basepath }}/{{ adminpath }}/posts'
+                    : '{{ basepath }}/{{ adminpath }}/posts/save/{{ post.id|default("") }}';
+                
+                const response = await axios.post(url, this.post);
+                
+                if (response.data.success) {
+                    alert('Post saved successfully!');
+                    if (this.mode === 'create') {
+                        window.location.href = '{{ adminFullPath }}/posts/edit/' + response.data.post_id;
+                    }
+                }
+            } catch (error) {
+                alert('Error saving post: ' + (error.response?.data?.message || error.message));
+            } finally {
+                this.saving = false;
+            }
+        },
+        
+        openMediaLibrary() {
+            // TODO: Implement media library modal
+            alert('Media library feature coming soon');
+        }
+    }
+}).mount('#postEditor');
+</script>
+{% endblock %}

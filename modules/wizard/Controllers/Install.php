@@ -46,7 +46,7 @@ class Install
 			}
 			if ($post['driver'] == 'mysql') {
 				$installsqldb = new InstallSQLDB($fileconf);
-				$resultdb = json_decode($installsqldb->createDB($post['driver'], $post['dbhost'], $post['dbname'], $post['dbuser'], $post['dbpass'], $post['prefix'], $post['dbencoding'], (int) (!empty($post['dbport'])? $post['dbport'] : 3306)));
+				$resultdb = json_decode($installsqldb->createDB($post['driver'], $post['dbhost'], $post['dbname'], $post['dbuser'], $post['dbpass'], $post['prefix'], (string) $post['dbencoding'], (string) $post['dbcollation'], (int) (!empty($post['dbport']) ? $post['dbport'] : 3306), (string) $post['admin'], (string) $post['email'], (string) $post['password']));
 				if ((int) $resultdb->code != 0) {
 					throw new Exception($resultdb->msg, (int) $resultdb->code);
 				}

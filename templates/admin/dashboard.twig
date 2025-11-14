@@ -1,0 +1,153 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Dashboard</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <!-- Stats Cards -->
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>{{ stats.totalPosts }}</h3>
+                        <p>Total Posts</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-newspaper"></i>
+                    </div>
+                    <a href="{{ basepath }}/admin/posts" class="small-box-footer">
+                        More info <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>{{ stats.publishedPosts }}</h3>
+                        <p>Published Posts</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <a href="{{ basepath }}/admin/posts" class="small-box-footer">
+                        More info <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>{{ stats.totalPages }}</h3>
+                        <p>Total Pages</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <a href="{{ adminPath }}/pages" class="small-box-footer">
+                        More info <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-danger">
+                    <div class="inner">
+                        <h3>{{ stats.totalUsers }}</h3>
+                        <p>Total Users</p>
+                    </div>
+                    <div class="icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <a href="{{ basepath }}/admin/users" class="small-box-footer">
+                        More info <i class="fas fa-arrow-circle-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Content -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Posts</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Author</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for post in recentPosts %}
+                                <tr>
+                                    <td><a href="{{ basepath }}/admin/posts/{{ post.id }}">{{ post.title }}</a></td>
+                                    <td>
+                                        <span class="badge badge-{{ post.status == 'published' ? 'success' : 'warning' }}">
+                                            {{ post.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ post.author_name }}</td>
+                                    <td>{{ post.created_at|date('Y-m-d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Pages</h3>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Status</th>
+                                    <th>Author</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for page in recentPages %}
+                                <tr>
+                                    <td><a href="{{ adminPath }}/pages/edit/{{ page.id }}">{{ page.title }}</a></td>
+                                    <td>
+                                        <span class="badge badge-{{ page.status == 'published' ? 'success' : 'warning' }}">
+                                            {{ page.status }}
+                                        </span>
+                                    </td>
+                                    <td>{{ page.author_name }}</td>
+                                    <td>{{ page.created_at|date('Y-m-d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

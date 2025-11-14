@@ -1,0 +1,136 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}Create User{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Create New User</h1>
+            </div>
+            <div class="col-sm-6">
+                <div class="float-sm-right">
+                    <a href="{{ basepath }}/admin/users" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Users
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content" id="userForm">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-group">
+                            <label>Username *</label>
+                            <input type="text" class="form-control" v-model="user.username" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Email *</label>
+                            <input type="email" class="form-control" v-model="user.email" required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>First Name</label>
+                                    <input type="text" class="form-control" v-model="user.first_name">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Last Name</label>
+                                    <input type="text" class="form-control" v-model="user.last_name">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Password *</label>
+                            <input type="password" class="form-control" v-model="user.password" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Role *</label>
+                            <select class="form-control" v-model="user.role_id" required>
+                                <option v-for="role in roles" :key="role.id" :value="role.id">
+                                    ${role.name}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Status</label>
+                            <select class="form-control" v-model="user.status">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="suspended">Suspended</option>
+                            </select>
+                        </div>
+
+                        <button @click="saveUser" class="btn btn-primary" :disabled="saving">
+                            <i class="fas fa-save"></i> Create User
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const { createApp } = Vue;
+
+createApp({
+    data() {
+        return {
+            user: {
+                username: '',
+                email: '',
+                first_name: '',
+                last_name: '',
+                password: '',
+                role_id: 3,
+                status: 'active'
+            },
+            roles: {{ roles|json_encode|raw }},
+            saving: false
+        }
+    },
+    methods: {
+        async saveUser() {
+            this.saving = true;
+            
+            try {
+                const response = await axios.post(basepath + '/admin/users', this.user);
+                
+                if (response.data.success) {
+                    alert('User created successfully!');
+                    window.location.href = basepath + '/admin/users';
+                }
+            } catch (error) {
+                if (error.response?.data?.errors) {
+                    let errorMsg = '';
+                    for (let field in error.response.data.errors) {
+                        errorMsg += error.response.data.errors[field].join(', ') + '\n';
+                    }
+                    alert('Validation errors:\n' + errorMsg);
+                } else {
+                    alert('Error creating user: ' + (error.response?.data?.message || error.message));
+                }
+            } finally {
+                this.saving = false;
+            }
+        }
+    }
+}).mount('#userForm');
+</script>
+{% endblock %}

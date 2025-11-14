@@ -1,0 +1,184 @@
+{% extends "admin/layout.twig" %}
+
+{% block title %}Permissions{% endblock %}
+
+{% block content %}
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1>Permissions</h1>
+            </div>
+            <div class="col-sm-6">
+                <div class="float-sm-right">
+                    <a href="{{ adminFullPath }}/permissions/create" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> New Permission
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content" id="permissionsApp">
+    <div class="container-fluid">
+        <div class="card">
+            <div class="card-header">
+                <div class="row">
+                    <div class="col-md-6">
+                        <input 
+                            type="text" 
+                            class="form-control" 
+                            placeholder="Search permissions..."
+                            v-model="search"
+                            @input="loadPermissions"
+                            style="max-width: 300px;"
+                        >
+                    </div>
+                </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Slug</th>
+                            <th>Description</th>
+                            <th>Assigned to Roles</th>
+                            <th>Created</th>
+                            <th width="150">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="loading">
+                            <td colspan="5" class="text-center">
+                                <i class="fas fa-spinner fa-spin"></i> Loading...
+                            </td>
+                        </tr>
+                        <tr v-else-if="permissions.length === 0">
+                            <td colspan="5" class="text-center">No permissions found</td>
+                        </tr>
+                        <tr v-else v-for="permission in permissions" :key="permission.id">
+                            <td>
+                                <strong><code>${permission.slug}</code></strong>
+                            </td>
+                            <td>
+                                <small class="text-muted">${permission.description || 'No description'}</small>
+                            </td>
+                            <td>
+                                <span class="badge badge-success">
+                                    ${permission.roles_count} roles
+                                </span>
+                            </td>
+                            <td>${formatDate(permission.created_at)}</td>
+                            <td>
+                                <a :href="'{{ adminFullPath }}/permissions/' + permission.id" class="btn btn-sm btn-info">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button 
+                                    @click="deletePermission(permission.id)" 
+                                    class="btn btn-sm btn-danger"
+                                >
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer clearfix" v-if="pagination.totalPages > 1">
+                <ul class="pagination pagination-sm m-0 float-right">
+                    <li class="page-item" :class="{disabled: pagination.page === 1}">
+                        <a class="page-link" href="#" @click.prevent="changePage(pagination.page - 1)">«</a>
+                    </li>
+                    <li 
+                        class="page-item" 
+                        v-for="p in pagination.totalPages" 
+                        :key="p"
+                        :class="{active: p === pagination.page}"
+                    >
+                        <a class="page-link" href="#" @click.prevent="changePage(p)">${p}</a>
+                    </li>
+                    <li class="page-item" :class="{disabled: pagination.page === pagination.totalPages}">
+                        <a class="page-link" href="#" @click.prevent="changePage(pagination.page + 1)">»</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const { createApp } = Vue;
+const adminFullPath = '{{ adminFullPath }}';
+
+createApp({
+    delimiters: ['${', '}'],
+    data() {
+        return {
+            permissions: {{ permissions|json_encode|raw }},
+            pagination: {{ pagination|json_encode|raw }},
+            search: '',
+            loading: false
+        }
+    },
+    methods: {
+        async loadPermissions() {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams({
+                    page: this.pagination.page,
+                    per_page: this.pagination.perPage
+                });
+                
+                if (this.search) params.append('search', this.search);
+                
+                const response = await axios.get(adminFullPath + '/api/permissions?' + params);
+                this.permissions = response.data.data;
+                this.pagination = {
+                    page: response.data.page,
+                    perPage: response.data.perPage,
+                    total: response.data.total,
+                    totalPages: response.data.totalPages
+                };
+            } catch (error) {
+                alert('Error loading permissions');
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        changePage(page) {
+            if (page >= 1 && page <= this.pagination.totalPages) {
+                this.pagination.page = page;
+                this.loadPermissions();
+            }
+        },
+        
+        async deletePermission(id) {
+            if (!confirm('Are you sure you want to delete this permission?')) return;
+            
+            try {
+                const response = await axios.delete(adminFullPath + '/permissions/' + id);
+                if (response.data.success) {
+                    this.loadPermissions();
+                } else {
+                    alert(response.data.message || 'Error deleting permission');
+                }
+            } catch (error) {
+                if (error.response && error.response.data && error.response.data.message) {
+                    alert(error.response.data.message);
+                } else {
+                    alert('Error deleting permission');
+                }
+            }
+        },
+        
+        formatDate(date) {
+            return new Date(date).toLocaleDateString();
+        }
+    }
+}).mount('#permissionsApp');
+</script>
+{% endblock %}
